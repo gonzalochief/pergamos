@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  pergamos:
+    build:
+      context: .
+    environment:
+      CALIBRE_SERVER_URL: http://calibre:8080
+      PERGAMOS_RAG_DIR: /data/pergamos_index
+    volumes:
+      - pergamos_index:/data/pergamos_index
+    depends_on:
+      - calibre
+    stdin_open: true
+    tty: true
+    command: ["python", "-m", "pergamos.server"]
+
+  calibre:
+    image: linuxserver/calibre-web:latest
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: UTC
+    ports:
+      - "8080:8080"
+    volumes:
+      - calibre_config:/config
+      - calibre_library:/books
+    restart: unless-stopped
+
+volumes:
+  pergamos_index:
+  calibre_config:
+  calibre_library:

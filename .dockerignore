@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.git/
+.gitignore
+.env
+.pergamos_index/
+.DS_Store
+examples/
+README.md

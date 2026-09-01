@@ -1,0 +1,13 @@
+{
+  "servers": {
+    "pergamos-calibre": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["-m", "pergamos.server"],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src",
+        "CALIBRE_SERVER_URL": "http://127.0.0.1:8080"
+      }
+    }
+  }
+}

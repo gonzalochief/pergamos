@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pergamos"
+version = "0.1.0"
+description = "MCP server for browsing a Calibre Content Server"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["mcp>=2.0.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
+rag = [
+    "chromadb>=0.5.0",
+    "sentence-transformers>=3.0.0",
+    "ebooklib>=0.18.0",
+    "pypdf>=4.0.0",
+]
+
+[project.scripts]
+pergamos = "pergamos.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pergamos"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
