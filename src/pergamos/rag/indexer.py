@@ -45,12 +45,11 @@ class BookRAGIndex:
 
     def index_book(self, book_id: str, title: str, download_url: str, format_name: str) -> list[str]:
         """Download a book, extract text, split it into chunks, and store embeddings."""
-        if self.collection is None or self._embedder is None:
-            self._ensure_dependencies()
-
         normalized = format_name.lower()
         if normalized not in {"epub", "pdf"}:
             raise ValueError(f"Unsupported book format for indexing: {format_name}")
+        if self.collection is None or self._embedder is None:
+            self._ensure_dependencies()
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir) / f"{book_id}.{normalized}"
@@ -62,11 +61,7 @@ class BookRAGIndex:
                 text = extract_text_from_pdf(str(tmp_path))
 
         chunks = split_text(text, chunk_size=700, overlap=80)
-        if not chunks:
-            return []
-
         ids = [f"{book_id}:{index}" for index in range(len(chunks))]
-        documents = chunks
         metadatas = [
             {
                 "book_id": str(book_id),
@@ -76,14 +71,20 @@ class BookRAGIndex:
             }
             for index in range(len(chunks))
         ]
-        embeddings = self._embedder.encode(documents).tolist()
+        existing_ids = set(self.collection.get(where={"book_id": str(book_id)}).get("ids", []))
 
-        self.collection.add(
-            ids=ids,
-            documents=documents,
-            embeddings=embeddings,
-            metadatas=metadatas,
-        )
+        if chunks:
+            embeddings = self._embedder.encode(chunks).tolist()
+            self.collection.upsert(
+                ids=ids,
+                documents=chunks,
+                embeddings=embeddings,
+                metadatas=metadatas,
+            )
+
+        stale_ids = existing_ids.difference(ids)
+        if stale_ids:
+            self.collection.delete(ids=list(stale_ids))
         return chunks
 
     def search(self, query: str, book_ids: list[str] | None = None, k: int = 5):
