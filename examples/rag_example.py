@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from pergamos.server import index_book_content, search_book_content
+from pergamos.server import index_book_content, rag_search_library, search_book_content
 
 
 def search_books(client, query: str, limit: int = 5):
@@ -43,13 +43,21 @@ def main() -> None:
     )
     print(result)
 
-    print("\nStep 4: semantic content search")
-    query_result = search_book_content(
+    print("\nStep 4: one-call hybrid search")
+    query_result = rag_search_library(
+        query="What does the book say about consensus?",
+        limit=5,
+        k=5,
+    )
+    print(query_result)
+
+    print("\nStep 5: semantic content search")
+    chunk_result = search_book_content(
         query="What does the book say about consensus?",
         book_ids=[sample_book["id"]],
         k=5,
     )
-    print(query_result)
+    print(chunk_result)
 
 
 if __name__ == "__main__":

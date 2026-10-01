@@ -87,6 +87,61 @@ class BookRAGIndex:
             self.collection.delete(ids=list(stale_ids))
         return chunks
 
+    def list_books(self) -> list[dict[str, object]]:
+        if self.collection is None or self._embedder is None:
+            self._ensure_dependencies()
+
+        records = self.collection.get(include=["metadatas"])
+        books: dict[str, dict[str, object]] = {}
+        for metadata in records.get("metadatas", []):
+            if not isinstance(metadata, dict):
+                continue
+            book_id = str(metadata.get("book_id", "")).strip()
+            if not book_id:
+                continue
+            entry = books.setdefault(
+                book_id,
+                {
+                    "book_id": book_id,
+                    "title": str(metadata.get("title") or "Unknown title"),
+                    "formats": set(),
+                    "chunk_count": 0,
+                },
+            )
+            entry["chunk_count"] = int(entry["chunk_count"]) + 1
+            format_name = metadata.get("format")
+            if format_name:
+                entry["formats"].add(str(format_name))
+
+        result = []
+        for book_id, entry in books.items():
+            result.append(
+                {
+                    "book_id": book_id,
+                    "title": entry["title"],
+                    "formats": sorted(entry["formats"]),
+                    "chunk_count": int(entry["chunk_count"]),
+                }
+            )
+        return sorted(result, key=lambda item: (str(item["title"]).lower(), str(item["book_id"])))
+
+    def delete_book(self, book_id: str) -> int:
+        if self.collection is None or self._embedder is None:
+            self._ensure_dependencies()
+
+        normalized_book_id = str(book_id).strip()
+        if not normalized_book_id:
+            return 0
+
+        existing_ids = set(self.collection.get(where={"book_id": normalized_book_id}).get("ids", []))
+        if existing_ids:
+            self.collection.delete(ids=list(existing_ids))
+        return len(existing_ids)
+
+    def refresh_book(self, book_id: str, title: str, download_url: str, format_name: str) -> list[str]:
+        self.delete_book(book_id)
+        return self.index_book(book_id, title, download_url, format_name)
+
     def search(self, query: str, book_ids: list[str] | None = None, k: int = 5):
         if self.collection is None or self._embedder is None:
             self._ensure_dependencies()

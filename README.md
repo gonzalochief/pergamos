@@ -57,6 +57,9 @@ For the optional RAG tools, add the `PERGAMOS_RAG_DIR` environment variable if y
 }
 ```
 
+**Note:** Make sure that the .pergamos_index is created inside the mcp directory.
+```mkdir -p /path/to/pergamos/.pergamos_index```
+
 ## Tools
 
 - `list_libraries`: checks the server and returns the root OPDS feed.
@@ -64,6 +67,10 @@ For the optional RAG tools, add the `PERGAMOS_RAG_DIR` environment variable if y
 - `get_book_details`: returns metadata and available format links for a Calibre book identifier.
 - `index_book_content`: downloads a selected book file, extracts the text, splits it into chunks, and stores the embeddings for semantic retrieval.
 - `search_book_content`: searches the indexed text chunks for one or more book IDs using a semantic query.
+- `list_indexed_books`: returns the books currently present in the local vector store, including title, format, and chunk counts.
+- `delete_book_index`: removes all indexed chunks for a single Calibre book ID, useful for re-indexing or cleanup.
+- `refresh_book_index`: deletes stale chunks for a book and reindexes the current file so the content store stays fresh without a full rebuild.
+- `rag_search_library`: runs the metadata search and content search in one call, returning both the book hits and any matching indexed chunks.
 
 The server does not change the library or download files. Format URLs are returned as metadata so Claude can identify available editions.
 
@@ -114,6 +121,35 @@ In practice, Claude Desktop can call the tools in that order:
 4. `search_book_content` to answer question-style queries over the indexed text
 
 This gives you metadata retrieval plus semantic content retrieval without replacing the Calibre search layer.
+
+A single hybrid call is also available:
+
+```python
+rag_search_library(
+    query="What does the book say about consensus?",
+    limit=5,
+    k=3,
+)
+```
+
+This returns the metadata hits from Calibre and any matching semantic snippets from the indexed content for those books.
+
+The semantic matches include citation-style metadata such as the book title, format, chunk index, and a `source` string that is suitable for agent responses.
+
+When you need to maintain the local index, you can inspect or prune it without touching the library itself:
+
+```python
+list_indexed_books()
+delete_book_index("42")
+refresh_book_index(
+    book_id="42",
+    title="Distributed Systems",
+    download_url="http://127.0.0.1:8080/get/42/epub",
+    format_name="epub",
+)
+```
+
+This is useful for re-indexing a book after a format change, cleaning stale chunks, or keeping the local vector store in sync with the current library.
 
 ## Dual-layer RAG pattern
 
