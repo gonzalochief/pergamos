@@ -167,6 +167,22 @@ class CalibreClient:
 
         return books[:limit]
 
+    def list_all_books(self, limit: int = 100, offset: int = 0) -> list[Book]:
+        params = urllib.parse.urlencode({"offset": offset})
+        next_path = f"opds?{params}"
+        books: list[Book] = []
+        seen_urls: set[str] = set()
+
+        while next_path and len(books) < limit:
+            page = self.feed(next_path)
+            books.extend(page.books)
+            if not page.next_url or page.next_url in seen_urls:
+                break
+            seen_urls.add(page.next_url)
+            next_path = page.next_url
+
+        return books[:limit]
+
     def get_book(self, identifier: str) -> Book:
         url = f"{self.settings.calibre_url}/ajax/book/{urllib.parse.quote(identifier, safe='')}"
         try:

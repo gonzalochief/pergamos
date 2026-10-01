@@ -10,6 +10,7 @@ def test_server_registers_expected_tools():
         "list_libraries",
         "search_books",
         "get_book_details",
+        "list_all_books",
         "index_book_content",
         "search_book_content",
         "rag_search_library",
@@ -77,6 +78,43 @@ def test_index_management_tools(monkeypatch):
 
     deleted = asyncio.run(mcp.call_tool("delete_book_index", {"book_id": "42"}))
     assert json.loads(deleted.content[0].text)["deleted_chunks"] == 3
+
+
+def test_list_all_books_returns_titles(monkeypatch):
+    class DummyBook:
+        identifier = "42"
+        title = "Distributed Systems"
+        authors = ["Alice"]
+        summary = "Summary"
+        publisher = None
+        published = None
+        language = None
+        tags = ["distributed"]
+        formats = [{"format": "epub", "url": "https://example.test/book.epub"}]
+        links = []
+
+        def as_dict(self):
+            return {
+                "id": self.identifier,
+                "title": self.title,
+                "authors": self.authors,
+                "summary": self.summary,
+                "publisher": self.publisher,
+                "published": self.published,
+                "language": self.language,
+                "tags": self.tags,
+                "formats": self.formats,
+                "links": self.links,
+            }
+
+    monkeypatch.setattr("pergamos.server._client", lambda: type("Client", (), {"list_all_books": lambda self, limit=100, offset=0: [DummyBook()]})())
+
+    result = asyncio.run(mcp.call_tool("list_all_books", {"limit": 10, "offset": 0}))
+    payload = json.loads(result.content[0].text)
+
+    assert payload["count"] == 1
+    assert payload["books"][0]["title"] == "Distributed Systems"
+    assert payload["books"][0]["id"] == "42"
 
 
 def test_search_book_content_includes_citation_metadata(monkeypatch):

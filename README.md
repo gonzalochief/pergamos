@@ -64,6 +64,7 @@ For the optional RAG tools, add the `PERGAMOS_RAG_DIR` environment variable if y
 
 - `list_libraries`: checks the server and returns the root OPDS feed.
 - `search_books`: performs a Calibre library-wide search across the metadata fields indexed by Calibre, including titles, authors, tags, comments, and identifiers. It accepts `query`, `limit` (1-100), and `offset`, and follows OPDS pagination up to the requested limit.
+- `list_all_books`: returns all books in the library by title and metadata without a search query, which is useful for research planning and later indexing work.
 - `get_book_details`: returns metadata and available format links for a Calibre book identifier.
 - `index_book_content`: downloads a selected book file, extracts the text, splits it into chunks, and stores the embeddings for semantic retrieval.
 - `search_book_content`: searches the indexed text chunks for one or more book IDs using a semantic query.
@@ -121,6 +122,14 @@ In practice, Claude Desktop can call the tools in that order:
 4. `search_book_content` to answer question-style queries over the indexed text
 
 This gives you metadata retrieval plus semantic content retrieval without replacing the Calibre search layer.
+
+If you want to enumerate the library before choosing which books to index, use `list_all_books`:
+
+```python
+list_all_books(limit=100, offset=0)
+```
+
+This is especially helpful for research planning, book-by-book indexing, or preparing a corpus of books for deeper semantic work.
 
 A single hybrid call is also available:
 

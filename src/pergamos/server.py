@@ -53,6 +53,18 @@ def get_book_details(identifier: str) -> str:
         return json.dumps({"error": str(error)})
 
 
+@mcp.tool()
+def list_all_books(limit: int = 100, offset: int = 0) -> str:
+    """List all books in the library by title, useful for later research and indexing work."""
+    if not 1 <= limit <= 1000 or offset < 0:
+        return json.dumps({"error": "limit must be 1-1000 and offset must be non-negative"})
+    try:
+        books = _client().list_all_books(limit=limit, offset=offset)
+        return json.dumps({"count": len(books), "books": [book.as_dict() for book in books]}, ensure_ascii=False)
+    except (ConfigurationError, CalibreError) as error:
+        return json.dumps({"error": str(error)})
+
+
 def _rag_index() -> BookRAGIndex:
     return BookRAGIndex(persist_dir=os.environ.get("PERGAMOS_RAG_DIR", ".pergamos_index"))
 
